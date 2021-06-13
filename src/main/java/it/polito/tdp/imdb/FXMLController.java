@@ -80,7 +80,19 @@ public class FXMLController {
 
     @FXML
     void doSimulazione(ActionEvent event) {
-
+    	txtResult.clear();
+    	String sGiorni = txtGiorni.getText();
+    	int giorni = -1;
+    	try {
+    		giorni = Integer.parseInt(sGiorni);
+    	} catch(NumberFormatException ne) {
+    		txtResult.setText("Devi inserire un numero!");
+    		return;
+    	}
+    	model.simula(giorni);
+    	for(Actor a: model.getAttoriIntervistati()) {
+    		txtResult.appendText(a.toString()+"\n");
+    	}
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete

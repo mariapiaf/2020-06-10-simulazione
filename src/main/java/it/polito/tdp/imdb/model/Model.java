@@ -1,6 +1,7 @@
 package it.polito.tdp.imdb.model;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -20,6 +21,7 @@ public class Model {
 	private ImdbDAO dao = new ImdbDAO();
 	private Graph<Actor, DefaultWeightedEdge> grafo;
 	private Map<Integer, Actor> idMap;
+	private Simulatore simulatore;
 	
 	public Model() {
 		dao = new ImdbDAO();
@@ -75,5 +77,15 @@ public class Model {
 		result.remove(attore1);
 		Collections.sort(result);
 		return result;
+	}
+	
+	public void simula(int giorni) {
+		simulatore = new Simulatore();
+		simulatore.init(giorni, grafo);
+		simulatore.run();
+	}
+	
+	public Collection<Actor> getAttoriIntervistati(){
+		return simulatore.getAttoriIntervistati();
 	}
 }
