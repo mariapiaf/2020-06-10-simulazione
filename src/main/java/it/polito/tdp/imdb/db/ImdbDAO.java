@@ -6,15 +6,18 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 import it.polito.tdp.imdb.model.Actor;
+import it.polito.tdp.imdb.model.Arco;
 import it.polito.tdp.imdb.model.Director;
 import it.polito.tdp.imdb.model.Movie;
 
 public class ImdbDAO {
 	
-	public List<Actor> listAllActors(){
+	public void listAllActors(Map<Integer, Actor> idMap){
 		String sql = "SELECT * FROM actors";
-		List<Actor> result = new ArrayList<Actor>();
+
 		Connection conn = DBConnect.getConnection();
 
 		try {
@@ -22,17 +25,18 @@ public class ImdbDAO {
 			ResultSet res = st.executeQuery();
 			while (res.next()) {
 
-				Actor actor = new Actor(res.getInt("id"), res.getString("first_name"), res.getString("last_name"),
-						res.getString("gender"));
-				
-				result.add(actor);
+				if(!idMap.containsKey(res.getInt("id"))) {
+					Actor actor = new Actor(res.getInt("id"), res.getString("first_name"), res.getString("last_name"),
+							res.getString("gender"));
+					
+					idMap.put(actor.getId(), actor);
+				}
 			}
 			conn.close();
-			return result;
+
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
-			return null;
 		}
 	}
 	
@@ -84,9 +88,88 @@ public class ImdbDAO {
 		}
 	}
 	
+	public List<Actor> getAttoriPerGenere(String genere){
+		String sql = "SELECT DISTINCT a.id, a.first_name, a.last_name, a.gender "
+				+ "FROM roles r, movies_genres mg, actors a "
+				+ "WHERE mg.genre = ? AND r.actor_id = a.id AND mg.movie_id=r.movie_id";
+		List<Actor> result = new ArrayList<Actor>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setString(1, genere);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+
+				Actor actor = new Actor(res.getInt("a.id"), res.getString("a.first_name"), res.getString("a.last_name"), res.getString("a.gender"));
+				
+				result.add(actor);
+			}
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+		
+	}
 	
 	
+	public List<Arco> getArchi(String genere, Map<Integer, Actor> idMap){
+		String sql = "SELECT r1.actor_id, r2.actor_id, COUNT(*) AS peso "
+				+ "FROM movies_genres mg1, movies_genres mg2, roles r1, roles r2 "
+				+ "WHERE mg1.genre = ? AND mg1.genre = mg2.genre "
+				+ "	AND mg1.movie_id = mg2.movie_id "
+				+ "	AND r1.movie_id = mg1.movie_id AND r2.movie_id = mg2.movie_id "
+				+ "	AND r1.actor_id > r2.actor_id "
+				+ "GROUP BY r1.actor_id, r2.actor_id";
+		
+		
+		List<Arco> result = new ArrayList<Arco>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setString(1, genere);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+
+				Actor a1 = idMap.get(res.getInt("r1.actor_id"));
+				Actor a2 = idMap.get(res.getInt("r2.actor_id"));
+				
+				result.add(new Arco(a1, a2, res.getInt("peso")));
+			}
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+		
+	}
 	
-	
+	public List<String> getGeneri() {
+		String sql = "SELECT DISTINCT genre "
+				+ "FROM movies_genres";
+		
+		List<String> result = new ArrayList<String>();
+		Connection conn = DBConnect.getConnection();
+
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet res = st.executeQuery();
+			while (res.next()) {
+				result.add(res.getString("genre"));
+			}
+			conn.close();
+			return result;
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 	
 }
